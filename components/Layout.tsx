@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { COPY } from '../constants';
+import { COPY } from '../constants.ts';
 
 interface LayoutProps {
   children: React.ReactNode;

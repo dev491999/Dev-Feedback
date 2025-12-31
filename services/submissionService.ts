@@ -1,6 +1,6 @@
 
-import { GOOGLE_SHEET_URL, LOCAL_STORAGE_KEY, SUBMISSION_COOLDOWN } from '../constants';
-import { FeedbackSubmission } from '../types';
+import { GOOGLE_SHEET_URL, LOCAL_STORAGE_KEY, SUBMISSION_COOLDOWN } from '../constants.ts';
+import { FeedbackSubmission } from '../types.ts';
 
 export const canSubmit = (): boolean => {
   const lastTime = localStorage.getItem(LOCAL_STORAGE_KEY);

@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import Layout from './components/Layout';
-import { COPY } from './constants';
-import { AppView } from './types';
-import { canSubmit, submitFeedback } from './services/submissionService';
+import Layout from './components/Layout.tsx';
+import { COPY } from './constants.ts';
+import { AppView } from './types.ts';
+import { canSubmit, submitFeedback } from './services/submissionService.ts';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.FORM);
