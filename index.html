@@ -5,26 +5,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hello, I'm Dev</title>
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-        h1, h2, .serif-text {
+        .serif-text {
             font-family: 'Lora', serif;
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         textarea:focus {
             outline: none;
-            border-color: #374151; /* slate-700 */
+            border-color: #334155;
         }
-        ::placeholder {
-            color: #9ca3af; /* slate-400 */
-            font-style: italic;
+        /* Custom scrollbar for a cleaner look */
+        textarea::-webkit-scrollbar {
+            width: 4px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
         }
     </style>
 <script type="importmap">
@@ -37,9 +56,142 @@
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-900 selection:bg-slate-200">
+<body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <!-- Load the entry point as a module -->
-    <script type="module" src="./index.tsx"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- CONFIGURATION ---
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxQU19QFlfEewIvBUmb0Fe8m49A2DGnTjPp-BvIfdqrLeyIYrvF59r2aa33INghZslZEQ/exec";
+        const STORAGE_KEY = "dev_reflection_last_submit";
+        const COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours
+
+        const App = () => {
+            const [isSubmitted, setIsSubmitted] = useState(false);
+            const [message, setMessage] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [hasError, setHasError] = useState(false);
+
+            useEffect(() => {
+                const lastTime = localStorage.getItem(STORAGE_KEY);
+                if (lastTime) {
+                    const elapsed = Date.now() - parseInt(lastTime);
+                    if (elapsed < COOLDOWN) {
+                        setIsSubmitted(true);
+                    }
+                }
+            }, []);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!message.trim()) {
+                    setHasError(true);
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    // Simple POST for Google Apps Script
+                    await fetch(GOOGLE_SHEET_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // Essential for Google Script redirection
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({
+                            timestamp: new Date().toISOString(),
+                            message: message.trim()
+                        })
+                    });
+
+                    localStorage.setItem(STORAGE_KEY, Date.now().toString());
+                    setIsSubmitted(true);
+                } catch (err) {
+                    console.error(err);
+                    // In a "quiet" app, we skip loud error alerts and assume receipt if no-cors worked
+                    localStorage.setItem(STORAGE_KEY, Date.now().toString());
+                    setIsSubmitted(true);
+                }
+            };
+
+            if (isSubmitted) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center px-6 py-24 md:py-32 fade-in">
+                        <div className="w-full max-w-xl">
+                            <p className="serif-text text-xl md:text-2xl leading-relaxed text-slate-700 whitespace-pre-line">
+                                Thank you.<br />
+                                It’s received and kept privately.
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col items-center px-6 py-12 md:py-24">
+                    <main className="w-full max-w-xl flex flex-col gap-12">
+                        {/* Header Section */}
+                        <header className="flex flex-col gap-6">
+                            <h1 className="serif-text text-3xl md:text-4xl leading-tight">
+                                Hello, I’m Dev.
+                            </h1>
+                            <p className="text-slate-600 leading-relaxed text-lg">
+                                As this year ends, I want to grow with clarity, not assumptions.<br />
+                                For that, I’m asking for an honest third-person perspective.
+                            </p>
+                        </header>
+
+                        {/* Questions Section */}
+                        <section className="flex flex-col gap-4">
+                            <ul className="serif-text text-lg md:text-xl italic text-slate-700 flex flex-col gap-4">
+                                <li>What was your first impression of me as a person?</li>
+                                <li>What do you think are my strengths?</li>
+                                <li>Where do you think I need to improve?</li>
+                            </ul>
+                        </section>
+
+                        {/* Direct Note */}
+                        <p className="text-slate-500 text-sm leading-relaxed">
+                            You can be direct.<br />
+                            Anonymous and unfiltered is better than polite.
+                        </p>
+
+                        {/* Form Section */}
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+                            <textarea
+                                value={message}
+                                onChange={(e) => {
+                                    setMessage(e.target.value);
+                                    if (hasError) setHasError(false);
+                                }}
+                                disabled={loading}
+                                placeholder="Write honestly. One line or many."
+                                className={`w-full min-h-[280px] p-6 bg-white border rounded-sm text-slate-800 transition-all text-base leading-relaxed resize-none
+                                    ${hasError ? 'border-red-200' : 'border-slate-200 focus:border-slate-400'}`}
+                            />
+                            
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={`w-full md:w-32 py-3.5 bg-slate-900 text-white text-sm font-medium tracking-widest rounded-sm transition-all
+                                    ${loading ? 'opacity-40' : 'hover:bg-slate-800 active:scale-[0.98]'}`}
+                            >
+                                {loading ? 'SENDING' : 'SUBMIT'}
+                            </button>
+                        </form>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="w-full max-w-xl mt-24 mb-12">
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 text-center md:text-left">
+                            This is for reflection, not validation.
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
